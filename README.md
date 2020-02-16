@@ -8,3 +8,7 @@ The goal is to avoid that two circles with the same color collide.
 
 You can change the color of a circle by clicking on it.
 
+## Play online:
+
+[Play in your web browser!](https://fccm.github.io/Circle-Junction/circle-junction.html)
+
