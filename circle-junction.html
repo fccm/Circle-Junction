@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Circle Junction</title>
+<meta name="author" content="Florent Monnier"/>
+<meta name="viewport" content="width=device-width"/>
+<style rel="stylesheet" type="text/css">
+body {
+  padding:20px 40px;
+  text-align:center;
+  background-color:#646464;
+  background-image:url(bg.png);
+  background-repeat:repeat-x;
+}
+canvas {
+  margin:20px 40px;
+  border:1px solid #444;
+  box-shadow: -1px 2px 12px 1px rgba(0,0,0,0.2);
+}
+h1 {
+  font-size:1.6em;
+}
+.c0 { color:hsl( 30, 80%, 60%); }
+.c1 { color:hsl(120, 80%, 60%); }
+.c2 { color:hsl(210, 80%, 60%); }
+.c3 { color:hsl(300, 80%, 60%); }
+.c0,.c1,.c2,.c3 { padding:0 2px; }
+.title {
+  padding:6px 26px;
+  text-shadow:#222 -3px 4px 4px;
+}
+</style>
+</head>
+<body>
+
+<h1><span class="title"
+  ><span class="c0"
+  >C</span><span class="c1"
+  >i</span><span class="c2"
+  >r</span><span class="c3"
+  >c</span><span class="c0"
+  >l</span><span class="c1"
+  >e</span> <span class="c2"
+  >J</span><span class="c3"
+  >u</span><span class="c0"
+  >n</span><span class="c1"
+  >c</span><span class="c2"
+  >t</span><span class="c3"
+  >i</span><span class="c0"
+  >o</span><span class="c1"
+  >n</span></span></h1>
+
+<canvas id="my_canvas" width="780" height="560">
+No support for HTML5 Canvas!
+</canvas>
+
+<script type="text/javascript">
+var canvas = document.getElementById("my_canvas");
+var ctx = canvas.getContext("2d");
+
+var w = canvas.width;
+var h = canvas.height;
+
+var rect = canvas.getBoundingClientRect();
+
+ctx.lineWidth = 2;
+ctx.strokeStyle = "#222"
+
+var loop = setInterval(animate, 1000/40);
+canvas.addEventListener('mousedown', ev_mouse, false);
+
+// if game finished
+//clearInterval(loop);
+
+
+//var colors = [0, 120, 240];
+//var colors = [30, 120, 210, 300];
+//var colors = [0, 72, 144, 216, 288];
+var colors = [30, 102, 174, 246, 318];
+//var colors = [0, 60, 120, 180, 240, 300];
+//var colors = [10, 55, 100, 185, 210, 235, 280, 325];
+
+
+function next_color(c) {
+    var j = (c.color + 1) % colors.length;
+    c.color = j;
+}
+
+function new_loc(c) {
+    var _r = c.r;
+    c.x = _r + (w - 2*_r) * Math.random();
+    c.y = _r + (h - 2*_r) * Math.random();
+}
+
+function randFloat(a, b) {
+    return (a + (b - a) * Math.random());
+}
+
+// return an int between a and b included
+function randInt(a, b) {
+    return Math.floor(a + (b - a + 1) * Math.random());
+}
+
+function new_circle() {
+    var _r = 16 + 16 * Math.random();
+
+    var a = 360 * Math.random();
+ // var s = 0.6 + 1.4 * Math.random();
+    var s = 0.2 + 0.8 * Math.random();
+
+    var circle = {
+        r: _r,
+        x: _r + (w - 2*_r) * Math.random(),
+        y: _r + (h - 2*_r) * Math.random(),
+
+        dx: s * Math.cos(a * Math.PI/180),
+        dy: s * Math.sin(a * Math.PI/180),
+
+        color: Math.floor(colors.length * Math.random()),
+
+        collided: false
+    };
+    return circle;
+}
+
+var circles = [];
+var num_circles = 18;
+
+for (var i = 0; i < num_circles; i++) {
+    var _c = new_circle();
+    circles.push(_c);
+}
+
+    for (var i = 0; i < (circles.length - 1); i++) {
+        var ci = circles[i];
+        for (var j = i + 1; j < circles.length; j++) {
+            var cj = circles[j];
+            if (circles_collide(ci, cj)) {
+                next_color(ci);
+            }
+        }
+    }
+
+
+function circles_collide(ca, cb) {
+    if (ca.color != cb.color) return false;
+    if (ca.collided || cb.collided) return false;
+    var lx = ca.x - cb.x;
+    var ly = ca.y - cb.y;
+    var lim = ca.r + cb.r;
+    var collision = ((lx*lx + ly*ly) < (lim * lim));
+    return collision;
+}
+
+function circles_collided(ca, cb) {
+    ca.collided = true;
+    cb.collided = true;
+}
+
+function step_circle(c) {
+    if (!c.collided) {
+        c.x += c.dx;
+        c.y += c.dy;
+        if ((c.x - c.r) < 0 || (c.x + c.r) > w) c.dx = - c.dx;
+        if ((c.y - c.r) < 0 || (c.y + c.r) > h) c.dy = - c.dy;
+    }
+}
+
+function draw_circle(c) {
+    if (c.collided) {
+        ctx.fillStyle = "#888";
+    } else {
+        ctx.fillStyle = "hsla("+ colors[c.color] +", 80%, 60%, 0.6)";
+    }
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2, true);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function sort_circles(ca, cb) {
+    if (ca.collided && !cb.collided) return -1;
+    if (cb.collided && !ca.collided) return 1;
+    return 0;
+}
+
+function animate() {
+    ctx.fillStyle = "#777";
+    ctx.fillRect(0,0,w,h);
+
+    for (var i = 0; i < circles.length; i++) {
+        var c = circles[i];
+        step_circle(c);
+        draw_circle(c);
+    }
+    for (var i = 0; i < (circles.length - 1); i++) {
+        var ci = circles[i];
+        for (var j = i + 1; j < circles.length; j++) {
+            var cj = circles[j];
+            if (circles_collide(ci, cj)) {
+                circles_collided(ci, cj);
+                circles.sort(sort_circles);
+            }
+        }
+    }
+}
+
+function ev_mouse(ev) {
+ // var x = ev.pageX - canvas.offsetLeft;
+ // var y = ev.pageY - canvas.offsetTop;
+
+    var x = ev.clientX - rect.left;
+    var y = ev.clientY - rect.top;
+
+    for (var i = 0; i < circles.length; i++) {
+        var c = circles[i];
+
+        var lx = x - c.x;
+        var ly = y - c.y;
+
+        if ((lx*lx + ly*ly) < (c.r * c.r)) {
+            next_color(c);
+        }
+    }
+}
+</script>
+
+</body>
+</html>
